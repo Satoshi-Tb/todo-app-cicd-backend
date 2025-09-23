@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.taskapp.mapper.TaskMapper">
+
+    <resultMap id="TaskResultMap" type="com.example.taskapp.model.Task">
+        <id     property="id"         column="id"/>
+        <result property="title"      column="title"/>
+        <result property="description" column="description"/>
+        <result property="status"     column="status" javaType="com.example.taskapp.model.TaskStatus"/>
+        <result property="dueDate"    column="due_date"/>
+        <result property="version"    column="version"/>
+        <result property="createdAt"  column="created_at"/>
+        <result property="updatedAt"  column="updated_at"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, title, description, status, due_date, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tasks (
+            title, description, status, due_date, version, created_at, updated_at
+        ) VALUES (
+            #{title},
+            #{description},
+            #{status},
+            #{dueDate},
+            COALESCE(#{version}, 0),
+            COALESCE(#{createdAt}, CURRENT_TIMESTAMP),
+            COALESCE(#{updatedAt}, CURRENT_TIMESTAMP)
+        )
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="TaskResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tasks
+        WHERE id = #{id}
+    </select>
+
+    <select id="search" resultMap="TaskResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tasks
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+            <if test="q != null and q != ''">
+                <if test="status != null">AND</if>
+                (title LIKE CONCAT('%', #{q}, '%') OR description LIKE CONCAT('%', #{q}, '%'))
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(1)
+        FROM tasks
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+            <if test="q != null and q != ''">
+                <if test="status != null">AND</if>
+                (title LIKE CONCAT('%', #{q}, '%') OR description LIKE CONCAT('%', #{q}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <update id="updateWithOptimisticLock">
+        UPDATE tasks
+        SET
+            title = #{title},
+            description = #{description},
+            status = #{status},
+            due_date = #{dueDate},
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND version = #{version}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM tasks WHERE id = #{id}
+    </delete>
+
+</mapper>
+
