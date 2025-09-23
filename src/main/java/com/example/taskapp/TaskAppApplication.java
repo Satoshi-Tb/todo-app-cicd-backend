@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TodoAppCicdBackendApplication {
+public class TaskAppApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(TodoAppCicdBackendApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(TaskAppApplication.class, args);
+    }
 
 }
