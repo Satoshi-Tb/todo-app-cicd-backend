@@ -1,6 +1,6 @@
 # AGENTS.md — Spring Boot + MyBatis CRUD API（JUnitテスト教材用）
 
-> 目的：**JUnit テスト実装サンプル**のための、フロント不要・バックエンド専用の **Spring Boot + MyBatis + Maven** CRUD API を自動生成・自動整備する。**H2 で高速検証**しつつ、**Oracle（Testcontainers）で統合テスト**を実行可能にする。CI は **Jenkins** を想定。
+> 目的：**JUnit テスト実装サンプル**のための、フロント不要・バックエンド専用の **Spring Boot + MyBatis + Maven** CRUD API を自動生成・自動整備する。現段階は **H2 でアプリ実装および全テスト**を実施する（**Oracle 対応は後課題**／本フェーズでは **Testcontainers は未導入**）。CI は **Jenkins** を想定。設定ファイルは **application.properties** に統一する。
 
 ---
 
@@ -31,9 +31,10 @@
 * MyBatis + mybatis-spring-boot-starter
 * Flyway
 * JUnit 5, Mockito
+* Lombok（`@Data` 利用可）
 * Maven 3.9+
 
-> **方針**：H2データベース で実装、ユニットテスト、統合テスト実施。SQLはできるだけANSI準拠で記述
+> **方針**：H2データベース で実装、ユニットテスト、統合テスト実施（Oracle 対応は後課題）。SQLはできるだけANSI準拠で記述
 
 ---
 
@@ -59,7 +60,7 @@
    │  │  ├─ model/TaskStatus.java
    │  │  └─ exception/GlobalExceptionHandler.java
    │  └─ resources
-   │     ├─ application.yml
+   │     ├─ application.properties
    │     ├─ db/migration/V1__init.sql
    │     └─ mapper/TaskMapper.xml
    └─ test
@@ -99,7 +100,7 @@
 ### バリデーション
 
 * `title`: `@NotBlank @Size(max=200)`
-* `description`: `@Size(max=4000)`（実 DB では CLOB）
+* `description`: `@Size(max=4000)`（Oracle の `VARCHAR2` 相当）
 * `status`: `@NotNull`
 * `dueDate`: `@FutureOrPresent`
 
@@ -117,6 +118,7 @@
 * `V1__init.sql` を生成：
 
   * `tasks(id, title, description, status, due_date, version, created_at, updated_at)`
+  * `description` カラムは `VARCHAR(4000)`（Oracle の `VARCHAR2(4000)` 相当）
 
 ---
 
@@ -139,14 +141,16 @@
 * **`@WebMvcTest(TaskController)`**：HTTP 契約、バリデーション、If-Match/ETag
 * **`@MybatisTest`**：Mapper の SQL/マッピング（H2）
 
-3. **統合**（`@SpringBootTest` + TestRestTemplateによるAPIテスト）
+3. **統合**（`@SpringBootTest` + TestRestTemplate による API テスト、H2 のみ。Oracle Testcontainers は本フェーズでは未使用）
 
 
 ## 📜 コーディング規約 & 設計ルール（抜粋）
 
 * Controller では **DTO ⇄ Domain 変換**を明確化（`TaskResp.from(domain)`）
-* 更新は **If-Match(version)** 必須、レスポンスは **ETag(newVersion)** を設定
-* 例外は **共通ハンドラ**に集約（422/400/404/409）
+* 更新は **If-Match(version)** 必須、レスポンスは **ETag(newVersion)** を設定（ETag は数値そのまま・引用符なしで扱う）
+* `DELETE /api/tasks/{id}` は **204 No Content** を返す
+* 一覧応答は `{ content, page, size, total }` 形式、既定 `page=0`, `size=20`、`size` 上限は 100、既定ソートは `created_at DESC`
+* 例外は **共通ハンドラ**に集約（400/404/409）
 * Service は **トランザクション境界**、Mapper は集約ごと
 * MyBatis の XML は **N+1** を避け、必要に応じて `fetch size`/`resultOrdered` を設定
 
@@ -198,13 +202,14 @@
 
 **要件要約**
 
-* Spring Boot 3.x, Java 17, Maven
-* MyBatis（XML マッパー）、Flyway
+* Spring Boot 3.x, Java 21, Maven
+* MyBatis（XML マッパー）、Flyway、Lombok（`@Data` 可）
 * Task CRUD（title/description/status/dueDate/version/createdAt/updatedAt）
-* 楽観ロック（If-Match/ETag、version インクリメント）
+* 楽観ロック（If-Match/ETag、version インクリメント。ETag は数値・非引用）
 * 検索 & ページング（status/q/page/size）
-* テスト：ユニット（Mockito）、`@WebMvcTest`、`@MybatisTest`（H2）、`@SpringBootTest` + Testcontainers(Oracle)
-* JaCoCo レポート
+* 設定は `application.properties`
+* テスト：ユニット（Mockito）、`@WebMvcTest`、`@MybatisTest`（H2）、`@SpringBootTest`（H2）
+* JaCoCo レポート（命令網羅 70% 以上）
 
 ---
 
