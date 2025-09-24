@@ -43,6 +43,7 @@ jobs:
 
   integration:
     name: Integration (Ubuntu, JDK 21)
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     needs: unit
     steps:
