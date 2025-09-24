@@ -118,7 +118,8 @@
 							<goal>verify</goal>
 						</goals>
 						<configuration>
-							<argLine>${jacoco.it.argLine} ${mockito.agent.argLine}</argLine>
+							<!-- Use the same property name 'argLine' as prepared by JaCoCo in pre-integration-test -->
+							<argLine>${argLine} ${mockito.agent.argLine}</argLine>
 							<includes>
 								<include>**/*IT.java</include>
 							</includes>
@@ -145,6 +146,10 @@
 						<goals>
 							<goal>prepare-agent-integration</goal>
 						</goals>
+						<configuration>
+							<!-- Ensure JaCoCo writes JVM args into the standard 'argLine' property so Failsafe can consume it. -->
+							<propertyName>argLine</propertyName>
+						</configuration>
 					</execution>
 					<execution>
 						<id>report</id>
