@@ -29,11 +29,8 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Build & Test (skip ITs, generate coverage)
-        run: |
-          mvn -B -ntp -DskipITs verify
-          # 念のため jacoco:report を明示実行
-          mvn -B -ntp jacoco:report
+      - name: Build & Test (Surefire only) + Coverage
+        run: mvn -B -ntp -DskipITs test jacoco:report
         env:
           MAVEN_OPTS: -Dfile.encoding=UTF-8
 
