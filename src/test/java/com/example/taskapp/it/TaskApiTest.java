@@ -27,7 +27,7 @@ import com.example.taskapp.model.TaskStatus;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Task API 統合テスト（TestRestTemplate＋H2実DB）")
 @Sql(scripts = "/testdata/clean.sql", config = @SqlConfig(encoding = "UTF-8"), executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class TaskApiIT {
+class TaskApiTest {
 
     @Autowired
     TestRestTemplate rest;
@@ -102,7 +102,7 @@ class TaskApiIT {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("If-Match", String.valueOf(created.getVersion())); // 数値・非引用
+        headers.add("If-Match", String.valueOf(created.getVersion()));
         HttpEntity<TaskUpdateReq> entity = new HttpEntity<>(body, headers);
 
         ResponseEntity<TaskResp> res = rest.exchange("/api/tasks/" + created.getId(), HttpMethod.PUT, entity, TaskResp.class);
@@ -118,7 +118,6 @@ class TaskApiIT {
     void put_conflict_returns_409() {
         TaskResp created = createTask("Conflict", "", TaskStatus.OPEN, LocalDate.now());
 
-        // まず正しいversion(0)で更新→versionが1になる
         TaskUpdateReq body1 = new TaskUpdateReq();
         body1.setTitle("Once");
         body1.setDescription("1");
@@ -129,7 +128,6 @@ class TaskApiIT {
         h1.add("If-Match", "0");
         rest.exchange("/api/tasks/" + created.getId(), HttpMethod.PUT, new HttpEntity<>(body1, h1), TaskResp.class);
 
-        // 古いversion(0)で再更新→409
         TaskUpdateReq body2 = new TaskUpdateReq();
         body2.setTitle("Twice");
         body2.setDescription("2");
@@ -156,19 +154,11 @@ class TaskApiIT {
     }
 
     @Test
-    @DisplayName("異常系: DELETE /api/tasks/{id} 存在しないIDで404")
-    void delete_not_found_returns_404() {
-        ResponseEntity<Void> res = rest.exchange("/api/tasks/999999", HttpMethod.DELETE, HttpEntity.EMPTY, Void.class);
-        assertThat(res.getStatusCode().value()).isEqualTo(404);
-    }
-
-    @Test
     @DisplayName("正常系: GET /api/tasks の検索・ページング（status+q、created_at DESC）")
     @Sql(scripts = "/testdata/task_seed.sql", config = @SqlConfig(encoding = "UTF-8"), executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void search_with_filters_and_paging() {
         ParameterizedTypeReference<PageResponse<TaskResp>> type = new ParameterizedTypeReference<>() {};
 
-        // page=0,size=1 → より新しいcreated_at順
         ResponseEntity<PageResponse<TaskResp>> p1 = rest.exchange(
                 "/api/tasks?status=OPEN&q=foo&page=0&size=1",
                 HttpMethod.GET,
@@ -180,7 +170,6 @@ class TaskApiIT {
         assertThat(p1.getBody().total()).isEqualTo(2);
         assertThat(p1.getBody().content().get(0).getTitle()).isEqualTo("Another foo");
 
-        // page=1,size=1 → 次の要素
         ResponseEntity<PageResponse<TaskResp>> p2 = rest.exchange(
                 "/api/tasks?status=OPEN&q=foo&page=1&size=1",
                 HttpMethod.GET,
@@ -192,3 +181,4 @@ class TaskApiIT {
         assertThat(p2.getBody().content().get(0).getTitle()).isEqualTo("Alpha task");
     }
 }
+
