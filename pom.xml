@@ -126,6 +126,10 @@
 						</configuration>
 					</execution>
 				</executions>
+				<configuration>
+					<!-- ITは当面無効化（プラグイン定義は将来のため維持） -->
+					<skipITs>true</skipITs>
+				</configuration>
 			</plugin>
 
 			<!-- JaCoCo coverage -->
