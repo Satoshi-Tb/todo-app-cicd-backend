@@ -141,28 +141,10 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>prepare-agent-integration</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>prepare-agent-integration</goal>
-						</goals>
-						<configuration>
-							<!-- Ensure JaCoCo writes JVM args into the standard 'argLine' property so Failsafe can consume it. -->
-							<propertyName>argLine</propertyName>
-						</configuration>
-					</execution>
-					<execution>
 						<id>report</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>report-integration</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>report-integration</goal>
 						</goals>
 					</execution>
 				</executions>
